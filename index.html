@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Gestión FLN - Supabase</title>
+    <title>Sistema de Gestión FLN</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         * {
@@ -373,8 +373,8 @@
             <div class="tabs">
                 <button class="tab active" onclick="switchTab('upload')">📤 Subir Archivos</button>
                 <button class="tab" onclick="switchTab('files')">📁 Mis Archivos</button>
-                <button class="tab" id="allFilesTab" style="display: none;" onclick="switchTab('allFiles')">👥 Todos los Archivos</button>
-                <button class="tab" id="formsTab" style="display: none;" onclick="switchTab('forms')">📋 Formularios</button>
+                <button class="tab" id="allFilesTabBtn" style="display: none;" onclick="switchTab('allFiles')">👥 Todos los Archivos</button>
+                <button class="tab" id="formsTabBtn" style="display: none;" onclick="switchTab('forms')">📋 Formularios</button>
             </div>
 
             <!-- Upload Tab -->
@@ -459,41 +459,39 @@
 
     <script>
         // ============================================
-        // CONFIGURACIÓN DE SUPABASE (PRODUCCIÓN)
+        // CONFIGURACIÓN DE SUPABASE
         // ============================================
-        const SUPABASE_URL = 'https://eowhdqqkbguktklwaelw.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvd2hkcXFrYmd1a3RrbHdhZWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4NDM1MjMsImV4cCI6MjA4NTQxOTUyM30.OhFLST8abPud_FVFgDWVgZSQlKR15FvWAr2ljXI_tnU';
+        const SUPABASE_CONFIG = {
+            url: 'https://eowhdqqkbguktklwaelw.supabase.co',
+            key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvd2hkcXFrYmd1a3RrbHdhZWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4NDM1MjMsImV4cCI6MjA4NTQxOTUyM30.OhFLST8abPud_FVFgDWVgZSQlKR15FvWAr2ljXI_tnU'
+        };
 
-        // Global variables
-        let supabase = null;
+        // Variables globales
+        let supabaseClient;
         let currentUser = null;
         let fieldCounter = 0;
 
-        // Admin users
+        // Emails de administradores
         const ADMIN_EMAILS = ['oyepez@fln.com'];
 
-        // Initialize app
+        // Inicializar aplicación
         function init() {
-            // Inicializar Supabase directamente con las credenciales
-            initSupabase(SUPABASE_URL, SUPABASE_KEY);
+            try {
+                // Inicializar cliente de Supabase
+                supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
+                console.log('✅ Supabase inicializado correctamente');
+            } catch (error) {
+                console.error('❌ Error al inicializar Supabase:', error);
+                showError('loginError', 'Error de conexión con Supabase');
+            }
 
-            // Setup event listeners
+            // Configurar event listeners
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
             document.getElementById('uploadForm').addEventListener('submit', handleFileUpload);
             document.getElementById('createFormForm').addEventListener('submit', handleCreateForm);
         }
 
-        // Initialize Supabase
-        async function initSupabase(url, key) {
-            try {
-                supabase = window.supabase.createClient(url, key);
-                console.log('✅ Supabase inicializado correctamente');
-            } catch (error) {
-                showAlert('Error al conectar con Supabase: ' + error.message, 'error');
-            }
-        }
-
-        // Handle login
+        // Manejar login
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -504,7 +502,7 @@
             loginBtn.textContent = 'Iniciando sesión...';
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
@@ -519,24 +517,25 @@
 
                 showApp();
             } catch (error) {
-                showError('loginError', error.message || 'Error al iniciar sesión');
+                console.error('Error de login:', error);
+                showError('loginError', error.message || 'Error al iniciar sesión. Verifica tus credenciales.');
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Iniciar Sesión';
             }
         }
 
-        // Show app
+        // Mostrar aplicación
         function showApp() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('appScreen').style.display = 'block';
             document.getElementById('userEmail').textContent = currentUser.email;
             document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Administrador' : 'Usuario';
 
-            // Show admin tabs
+            // Mostrar pestañas de admin
             if (currentUser.role === 'admin') {
-                document.getElementById('allFilesTab').style.display = 'block';
-                document.getElementById('formsTab').style.display = 'block';
+                document.getElementById('allFilesTabBtn').style.display = 'block';
+                document.getElementById('formsTabBtn').style.display = 'block';
             }
 
             loadMyFiles();
@@ -546,16 +545,16 @@
             }
         }
 
-        // Logout
+        // Cerrar sesión
         async function logout() {
-            await supabase.auth.signOut();
+            await supabaseClient.auth.signOut();
             currentUser = null;
             document.getElementById('loginScreen').style.display = 'block';
             document.getElementById('appScreen').style.display = 'none';
             document.getElementById('loginForm').reset();
         }
 
-        // Switch tabs
+        // Cambiar de pestaña
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -563,13 +562,12 @@
             event.target.classList.add('active');
             document.getElementById(tabName + 'Tab').classList.add('active');
 
-            // Reload data when switching tabs
             if (tabName === 'files') loadMyFiles();
             if (tabName === 'allFiles') loadAllFiles();
             if (tabName === 'forms') loadForms();
         }
 
-        // Handle file upload
+        // Subir archivo
         async function handleFileUpload(e) {
             e.preventDefault();
             const fileInput = document.getElementById('fileInput');
@@ -588,14 +586,13 @@
             progressDiv.style.display = 'block';
 
             try {
-                // Upload file to Supabase Storage
                 const fileExt = file.name.split('.').pop();
                 const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
                 const filePath = `${currentUser.id}/${fileName}`;
 
                 progressFill.style.width = '30%';
 
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
                     .from('files')
                     .upload(filePath, file);
 
@@ -603,15 +600,13 @@
 
                 progressFill.style.width = '60%';
 
-                // Get public URL
-                const { data: urlData } = supabase.storage
+                const { data: urlData } = supabaseClient.storage
                     .from('files')
                     .getPublicUrl(filePath);
 
                 progressFill.style.width = '80%';
 
-                // Save file metadata to database
-                const { error: dbError } = await supabase
+                const { error: dbError } = await supabaseClient
                     .from('files')
                     .insert([{
                         name: file.name,
@@ -649,13 +644,13 @@
             }
         }
 
-        // Load my files
+        // Cargar mis archivos
         async function loadMyFiles() {
             const container = document.getElementById('myFilesList');
             container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando archivos...</div>';
 
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('files')
                     .select('*')
                     .eq('uploaded_by', currentUser.id)
@@ -671,16 +666,16 @@
                 container.innerHTML = data.map(file => `
                     <div class="file-item">
                         <div class="file-info">
-                            <div class="file-name">📄 ${file.name}</div>
+                            <div class="file-name">📄 ${escapeHtml(file.name)}</div>
                             <div class="file-meta">
-                                ${file.description || 'Sin descripción'} • 
+                                ${escapeHtml(file.description || 'Sin descripción')} • 
                                 ${formatFileSize(file.file_size)} • 
                                 ${formatDate(file.created_at)}
                             </div>
                         </div>
                         <div class="file-actions">
-                            <button class="btn-secondary btn-small" onclick="downloadFile('${file.file_url}', '${file.name}')">Descargar</button>
-                            <button class="btn-danger btn-small" onclick="deleteFile('${file.id}', '${file.file_path}')">Eliminar</button>
+                            <button class="btn-secondary btn-small" onclick="downloadFile('${escapeHtml(file.file_url)}', '${escapeHtml(file.name)}')">Descargar</button>
+                            <button class="btn-danger btn-small" onclick="deleteFile('${file.id}', '${escapeHtml(file.file_path)}')">Eliminar</button>
                         </div>
                     </div>
                 `).join('');
@@ -689,13 +684,13 @@
             }
         }
 
-        // Load all files (admin)
+        // Cargar todos los archivos (admin)
         async function loadAllFiles() {
             const container = document.getElementById('allFilesList');
             container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando archivos...</div>';
 
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('files')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -710,17 +705,17 @@
                 container.innerHTML = data.map(file => `
                     <div class="file-item">
                         <div class="file-info">
-                            <div class="file-name">📄 ${file.name}</div>
+                            <div class="file-name">📄 ${escapeHtml(file.name)}</div>
                             <div class="file-meta">
-                                Subido por: ${file.user_email} • 
-                                ${file.description || 'Sin descripción'} • 
+                                Subido por: ${escapeHtml(file.user_email)} • 
+                                ${escapeHtml(file.description || 'Sin descripción')} • 
                                 ${formatFileSize(file.file_size)} • 
                                 ${formatDate(file.created_at)}
                             </div>
                         </div>
                         <div class="file-actions">
-                            <button class="btn-secondary btn-small" onclick="downloadFile('${file.file_url}', '${file.name}')">Descargar</button>
-                            <button class="btn-danger btn-small" onclick="deleteFile('${file.id}', '${file.file_path}')">Eliminar</button>
+                            <button class="btn-secondary btn-small" onclick="downloadFile('${escapeHtml(file.file_url)}', '${escapeHtml(file.name)}')">Descargar</button>
+                            <button class="btn-danger btn-small" onclick="deleteFile('${file.id}', '${escapeHtml(file.file_path)}')">Eliminar</button>
                         </div>
                     </div>
                 `).join('');
@@ -729,7 +724,7 @@
             }
         }
 
-        // Download file
+        // Descargar archivo
         function downloadFile(url, filename) {
             const link = document.createElement('a');
             link.href = url;
@@ -740,20 +735,18 @@
             document.body.removeChild(link);
         }
 
-        // Delete file
+        // Eliminar archivo
         async function deleteFile(fileId, filePath) {
             if (!confirm('¿Estás seguro de eliminar este archivo?')) return;
 
             try {
-                // Delete from storage
-                const { error: storageError } = await supabase.storage
+                const { error: storageError } = await supabaseClient.storage
                     .from('files')
                     .remove([filePath]);
 
                 if (storageError) throw storageError;
 
-                // Delete from database
-                const { error: dbError } = await supabase
+                const { error: dbError } = await supabaseClient
                     .from('files')
                     .delete()
                     .eq('id', fileId);
@@ -770,7 +763,7 @@
             }
         }
 
-        // Form management
+        // Gestión de formularios
         function openCreateFormModal() {
             document.getElementById('createFormModal').classList.add('active');
             document.getElementById('formFields').innerHTML = '';
@@ -828,7 +821,7 @@
             const description = document.getElementById('formDescription').value;
             
             const fields = [];
-            document.querySelectorAll('.form-field').forEach((fieldDiv, index) => {
+            document.querySelectorAll('.form-field').forEach((fieldDiv) => {
                 fields.push({
                     label: fieldDiv.querySelector('.field-label').value,
                     type: fieldDiv.querySelector('.field-type').value,
@@ -837,7 +830,7 @@
             });
 
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('forms')
                     .insert([{
                         title,
@@ -862,7 +855,7 @@
             container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando formularios...</div>';
 
             try {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('forms')
                     .select('*')
                     .order('created_at', { ascending: false });
@@ -877,9 +870,9 @@
                 container.innerHTML = data.map(form => `
                     <div class="file-item">
                         <div class="file-info">
-                            <div class="file-name">📋 ${form.title}</div>
+                            <div class="file-name">📋 ${escapeHtml(form.title)}</div>
                             <div class="file-meta">
-                                ${form.description || 'Sin descripción'} • 
+                                ${escapeHtml(form.description || 'Sin descripción')} • 
                                 ${form.fields.length} campos • 
                                 Creado: ${formatDate(form.created_at)}
                             </div>
@@ -896,7 +889,7 @@
             if (!confirm('¿Estás seguro de eliminar este formulario?')) return;
 
             try {
-                const { error } = await supabase
+                const { error } = await supabaseClient
                     .from('forms')
                     .delete()
                     .eq('id', formId);
@@ -910,7 +903,7 @@
             }
         }
 
-        // Utility functions
+        // Funciones de utilidad
         function showAlert(message, type) {
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type}`;
@@ -954,7 +947,13 @@
             });
         }
 
-        // Initialize on load
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Inicializar al cargar
         window.onload = init;
     </script>
 </body>
