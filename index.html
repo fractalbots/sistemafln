@@ -307,27 +307,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        .config-section {
-            background: #fff3cd;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #ffc107;
-        }
-
-        .config-section h3 {
-            color: #856404;
-            margin-bottom: 15px;
-        }
-
-        .config-section code {
-            background: #fff;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-family: monospace;
-            color: #d63384;
-        }
-
         .progress-bar {
             width: 100%;
             height: 20px;
@@ -342,42 +321,25 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             transition: width 0.3s;
         }
+
+        .connection-status {
+            text-align: center;
+            padding: 10px;
+            background: #d4edda;
+            color: #155724;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Configuration Screen -->
-        <div id="configScreen">
-            <h1>⚙️ Configuración de Supabase</h1>
-            <div class="config-section">
-                <h3>📝 Instrucciones de Configuración</h3>
-                <ol style="line-height: 1.8; color: #856404;">
-                    <li>Ve a <a href="https://supabase.com" target="_blank">supabase.com</a> y crea una cuenta</li>
-                    <li>Crea un nuevo proyecto</li>
-                    <li>Ve a Settings → API</li>
-                    <li>Copia tu <code>Project URL</code> y <code>anon/public key</code></li>
-                    <li>Pega las credenciales abajo</li>
-                </ol>
-            </div>
-            
-            <form id="configForm">
-                <div class="form-group">
-                    <label for="supabaseUrl">Supabase URL</label>
-                    <input type="url" id="supabaseUrl" required 
-                           placeholder="https://tu-proyecto.supabase.co">
-                </div>
-                <div class="form-group">
-                    <label for="supabaseKey">Supabase Anon Key</label>
-                    <input type="text" id="supabaseKey" required 
-                           placeholder="eyJhbGci...">
-                </div>
-                <button type="submit">Conectar a Supabase</button>
-            </form>
-        </div>
-
         <!-- Login Screen -->
-        <div id="loginScreen" style="display: none;" class="login-container">
+        <div id="loginScreen" class="login-container">
             <h1>🔐 Sistema FLN</h1>
+            <div class="connection-status">
+                ✅ Conectado a Supabase
+            </div>
             <div id="loginError"></div>
             <form id="loginForm">
                 <div class="form-group">
@@ -496,6 +458,12 @@
     </div>
 
     <script>
+        // ============================================
+        // CONFIGURACIÓN DE SUPABASE (PRODUCCIÓN)
+        // ============================================
+        const SUPABASE_URL = 'https://eowhdqqkbguktklwaelw.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvd2hkcXFrYmd1a3RrbHdhZWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk4NDM1MjMsImV4cCI6MjA4NTQxOTUyM30.OhFLST8abPud_FVFgDWVgZSQlKR15FvWAr2ljXI_tnU';
+
         // Global variables
         let supabase = null;
         let currentUser = null;
@@ -506,49 +474,20 @@
 
         // Initialize app
         function init() {
-            // Check if Supabase is already configured
-            const savedUrl = localStorage.getItem('supabase_url');
-            const savedKey = localStorage.getItem('supabase_key');
-
-            if (savedUrl && savedKey) {
-                initSupabase(savedUrl, savedKey);
-            }
+            // Inicializar Supabase directamente con las credenciales
+            initSupabase(SUPABASE_URL, SUPABASE_KEY);
 
             // Setup event listeners
-            document.getElementById('configForm').addEventListener('submit', handleConfig);
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
             document.getElementById('uploadForm').addEventListener('submit', handleFileUpload);
             document.getElementById('createFormForm').addEventListener('submit', handleCreateForm);
-        }
-
-        // Handle Supabase configuration
-        function handleConfig(e) {
-            e.preventDefault();
-            const url = document.getElementById('supabaseUrl').value.trim();
-            const key = document.getElementById('supabaseKey').value.trim();
-
-            localStorage.setItem('supabase_url', url);
-            localStorage.setItem('supabase_key', key);
-
-            initSupabase(url, key);
         }
 
         // Initialize Supabase
         async function initSupabase(url, key) {
             try {
                 supabase = window.supabase.createClient(url, key);
-                
-                // Test connection
-                const { data, error } = await supabase.from('files').select('count').limit(1);
-                
-                if (error && error.code === 'PGRST204') {
-                    // Table doesn't exist yet - that's ok
-                    showAlert('Conexión exitosa. Por favor ejecuta el SQL de configuración.', 'info');
-                }
-                
-                document.getElementById('configScreen').style.display = 'none';
-                document.getElementById('loginScreen').style.display = 'block';
-                
+                console.log('✅ Supabase inicializado correctamente');
             } catch (error) {
                 showAlert('Error al conectar con Supabase: ' + error.message, 'error');
             }
