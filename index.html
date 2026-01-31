@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión FLN - Supabase</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .login-container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            margin-top: 10px;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-success {
+            background: #28a745;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .user-info {
+            color: #555;
+        }
+
+        .user-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: transparent;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            width: auto;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .file-list, .form-list {
+            margin-top: 20px;
+        }
+
+        .file-item, .form-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            word-break: break-word;
+        }
+
+        .file-meta {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .form-field {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .field-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .btn-small {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .config-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ffc107;
+        }
+
+        .config-section h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .config-section code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            color: #d63384;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Configuration Screen -->
+        <div id="configScreen">
+            <h1>⚙️ Configuración de Supabase</h1>
+            <div class="config-section">
+                <h3>📝 Instrucciones de Configuración</h3>
+                <ol style="line-height: 1.8; color: #856404;">
+                    <li>Ve a <a href="https://supabase.com" target="_blank">supabase.com</a> y crea una cuenta</li>
+                    <li>Crea un nuevo proyecto</li>
+                    <li>Ve a Settings → API</li>
+                    <li>Copia tu <code>Project URL</code> y <code>anon/public key</code></li>
+                    <li>Pega las credenciales abajo</li>
+                </ol>
+            </div>
+            
+            <form id="configForm">
+                <div class="form-group">
+                    <label for="supabaseUrl">Supabase URL</label>
+                    <input type="url" id="supabaseUrl" required 
+                           placeholder="https://tu-proyecto.supabase.co">
+                </div>
+                <div class="form-group">
+                    <label for="supabaseKey">Supabase Anon Key</label>
+                    <input type="text" id="supabaseKey" required 
+                           placeholder="eyJhbGci...">
+                </div>
+                <button type="submit">Conectar a Supabase</button>
+            </form>
+        </div>
+
+        <!-- Login Screen -->
+        <div id="loginScreen" style="display: none;" class="login-container">
+            <h1>🔐 Sistema FLN</h1>
+            <div id="loginError"></div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Correo Electrónico</label>
+                    <input type="email" id="email" required placeholder="usuario@fln.com">
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña</label>
+                    <input type="password" id="password" required placeholder="Ingresa tu contraseña">
+                </div>
+                <button type="submit" id="loginBtn">Iniciar Sesión</button>
+            </form>
+        </div>
+
+        <!-- Main App Screen -->
+        <div id="appScreen" style="display: none;">
+            <div class="header">
+                <div>
+                    <h1>Sistema de Gestión FLN</h1>
+                    <div class="user-info">
+                        <span id="userEmail"></span>
+                        <span id="userRole" class="user-badge"></span>
+                    </div>
+                </div>
+                <button class="btn-secondary btn-small" onclick="logout()">Cerrar Sesión</button>
+            </div>
+
+            <div id="alertContainer"></div>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('upload')">📤 Subir Archivos</button>
+                <button class="tab" onclick="switchTab('files')">📁 Mis Archivos</button>
+                <button class="tab" id="allFilesTab" style="display: none;" onclick="switchTab('allFiles')">👥 Todos los Archivos</button>
+                <button class="tab" id="formsTab" style="display: none;" onclick="switchTab('forms')">📋 Formularios</button>
+            </div>
+
+            <!-- Upload Tab -->
+            <div id="uploadTab" class="tab-content active">
+                <h2>Subir Nuevo Archivo</h2>
+                <form id="uploadForm">
+                    <div class="form-group">
+                        <label for="fileInput">Seleccionar Archivo</label>
+                        <input type="file" id="fileInput" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="fileDescription">Descripción</label>
+                        <textarea id="fileDescription" rows="3" placeholder="Describe el archivo..."></textarea>
+                    </div>
+                    <div id="uploadProgress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-success" id="uploadBtn">Subir Archivo</button>
+                </form>
+            </div>
+
+            <!-- My Files Tab -->
+            <div id="filesTab" class="tab-content">
+                <h2>Mis Archivos</h2>
+                <div id="myFilesList" class="file-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando archivos...
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Files Tab (Admin only) -->
+            <div id="allFilesTab" class="tab-content">
+                <h2>Todos los Archivos</h2>
+                <div id="allFilesList" class="file-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando archivos...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Forms Tab (Admin only) -->
+            <div id="formsTab" class="tab-content">
+                <h2>Gestión de Formularios</h2>
+                <button onclick="openCreateFormModal()" class="btn-success">+ Crear Nuevo Formulario</button>
+                <div id="formsList" class="form-list">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Cargando formularios...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Form Modal -->
+    <div id="createFormModal" class="modal">
+        <div class="modal-content">
+            <h2>Crear Nuevo Formulario</h2>
+            <form id="createFormForm">
+                <div class="form-group">
+                    <label for="formTitle">Título del Formulario</label>
+                    <input type="text" id="formTitle" required placeholder="Ej: Solicitud de Vacaciones">
+                </div>
+                <div class="form-group">
+                    <label for="formDescription">Descripción</label>
+                    <textarea id="formDescription" rows="2" placeholder="Descripción breve del formulario"></textarea>
+                </div>
+                <div id="formFields"></div>
+                <button type="button" class="btn-secondary" onclick="addFormField()">+ Agregar Campo</button>
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn-success">Crear Formulario</button>
+                    <button type="button" class="btn-secondary" onclick="closeCreateFormModal()">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let supabase = null;
+        let currentUser = null;
+        let fieldCounter = 0;
+
+        // Admin users
+        const ADMIN_EMAILS = ['oyepez@fln.com'];
+
+        // Initialize app
+        function init() {
+            // Check if Supabase is already configured
+            const savedUrl = localStorage.getItem('supabase_url');
+            const savedKey = localStorage.getItem('supabase_key');
+
+            if (savedUrl && savedKey) {
+                initSupabase(savedUrl, savedKey);
+            }
+
+            // Setup event listeners
+            document.getElementById('configForm').addEventListener('submit', handleConfig);
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('uploadForm').addEventListener('submit', handleFileUpload);
+            document.getElementById('createFormForm').addEventListener('submit', handleCreateForm);
+        }
+
+        // Handle Supabase configuration
+        function handleConfig(e) {
+            e.preventDefault();
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const key = document.getElementById('supabaseKey').value.trim();
+
+            localStorage.setItem('supabase_url', url);
+            localStorage.setItem('supabase_key', key);
+
+            initSupabase(url, key);
+        }
+
+        // Initialize Supabase
+        async function initSupabase(url, key) {
+            try {
+                supabase = window.supabase.createClient(url, key);
+                
+                // Test connection
+                const { data, error } = await supabase.from('files').select('count').limit(1);
+                
+                if (error && error.code === 'PGRST204') {
+                    // Table doesn't exist yet - that's ok
+                    showAlert('Conexión exitosa. Por favor ejecuta el SQL de configuración.', 'info');
+                }
+                
+                document.getElementById('configScreen').style.display = 'none';
+                document.getElementById('loginScreen').style.display = 'block';
+                
+            } catch (error) {
+                showAlert('Error al conectar con Supabase: ' + error.message, 'error');
+            }
+        }
+
+        // Handle login
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Iniciando sesión...';
+
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) throw error;
+
+                currentUser = {
+                    id: data.user.id,
+                    email: data.user.email,
+                    role: ADMIN_EMAILS.includes(data.user.email) ? 'admin' : 'user'
+                };
+
+                showApp();
+            } catch (error) {
+                showError('loginError', error.message || 'Error al iniciar sesión');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Iniciar Sesión';
+            }
+        }
+
+        // Show app
+        function showApp() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'block';
+            document.getElementById('userEmail').textContent = currentUser.email;
+            document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Administrador' : 'Usuario';
+
+            // Show admin tabs
+            if (currentUser.role === 'admin') {
+                document.getElementById('allFilesTab').style.display = 'block';
+                document.getElementById('formsTab').style.display = 'block';
+            }
+
+            loadMyFiles();
+            if (currentUser.role === 'admin') {
+                loadAllFiles();
+                loadForms();
+            }
+        }
+
+        // Logout
+        async function logout() {
+            await supabase.auth.signOut();
+            currentUser = null;
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('appScreen').style.display = 'none';
+            document.getElementById('loginForm').reset();
+        }
+
+        // Switch tabs
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+
+            // Reload data when switching tabs
+            if (tabName === 'files') loadMyFiles();
+            if (tabName === 'allFiles') loadAllFiles();
+            if (tabName === 'forms') loadForms();
+        }
+
+        // Handle file upload
+        async function handleFileUpload(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const description = document.getElementById('fileDescription').value;
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressFill = document.getElementById('progressFill');
+
+            if (fileInput.files.length === 0) {
+                showAlert('Por favor selecciona un archivo', 'error');
+                return;
+            }
+
+            const file = fileInput.files[0];
+            uploadBtn.disabled = true;
+            progressDiv.style.display = 'block';
+
+            try {
+                // Upload file to Supabase Storage
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                const filePath = `${currentUser.id}/${fileName}`;
+
+                progressFill.style.width = '30%';
+
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('files')
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+
+                progressFill.style.width = '60%';
+
+                // Get public URL
+                const { data: urlData } = supabase.storage
+                    .from('files')
+                    .getPublicUrl(filePath);
+
+                progressFill.style.width = '80%';
+
+                // Save file metadata to database
+                const { error: dbError } = await supabase
+                    .from('files')
+                    .insert([{
+                        name: file.name,
+                        description: description,
+                        file_path: filePath,
+                        file_url: urlData.publicUrl,
+                        file_size: file.size,
+                        file_type: file.type,
+                        uploaded_by: currentUser.id,
+                        user_email: currentUser.email
+                    }]);
+
+                if (dbError) throw dbError;
+
+                progressFill.style.width = '100%';
+
+                showAlert('Archivo subido exitosamente', 'success');
+                document.getElementById('uploadForm').reset();
+                loadMyFiles();
+                if (currentUser.role === 'admin') {
+                    loadAllFiles();
+                }
+
+                setTimeout(() => {
+                    progressDiv.style.display = 'none';
+                    progressFill.style.width = '0%';
+                }, 1000);
+
+            } catch (error) {
+                showAlert('Error al subir archivo: ' + error.message, 'error');
+                progressDiv.style.display = 'none';
+                progressFill.style.width = '0%';
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        }
+
+        // Load my files
+        async function loadMyFiles() {
+            const container = document.getElementById('myFilesList');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando archivos...</div>';
+
+            try {
+                const { data, error } = await supabase
+                    .from('files')
+                    .select('*')
+                    .eq('uploaded_by', currentUser.id)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="empty-state">📭<br>No has subido archivos aún</div>';
+                    return;
+                }
+
+                container.innerHTML = data.map(file => `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <div class="file-name">📄 ${file.name}</div>
+                            <div class="file-meta">
+                                ${file.description || 'Sin descripción'} • 
+                                ${formatFileSize(file.file_size)} • 
+                                ${formatDate(file.created_at)}
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="btn-secondary btn-small" onclick="downloadFile('${file.file_url}', '${file.name}')">Descargar</button>
+                            <button class="btn-danger btn-small" onclick="deleteFile('${file.id}', '${file.file_path}')">Eliminar</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Load all files (admin)
+        async function loadAllFiles() {
+            const container = document.getElementById('allFilesList');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando archivos...</div>';
+
+            try {
+                const { data, error } = await supabase
+                    .from('files')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="empty-state">📭<br>No hay archivos en el sistema</div>';
+                    return;
+                }
+
+                container.innerHTML = data.map(file => `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <div class="file-name">📄 ${file.name}</div>
+                            <div class="file-meta">
+                                Subido por: ${file.user_email} • 
+                                ${file.description || 'Sin descripción'} • 
+                                ${formatFileSize(file.file_size)} • 
+                                ${formatDate(file.created_at)}
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="btn-secondary btn-small" onclick="downloadFile('${file.file_url}', '${file.name}')">Descargar</button>
+                            <button class="btn-danger btn-small" onclick="deleteFile('${file.id}', '${file.file_path}')">Eliminar</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Download file
+        function downloadFile(url, filename) {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Delete file
+        async function deleteFile(fileId, filePath) {
+            if (!confirm('¿Estás seguro de eliminar este archivo?')) return;
+
+            try {
+                // Delete from storage
+                const { error: storageError } = await supabase.storage
+                    .from('files')
+                    .remove([filePath]);
+
+                if (storageError) throw storageError;
+
+                // Delete from database
+                const { error: dbError } = await supabase
+                    .from('files')
+                    .delete()
+                    .eq('id', fileId);
+
+                if (dbError) throw dbError;
+
+                showAlert('Archivo eliminado', 'success');
+                loadMyFiles();
+                if (currentUser.role === 'admin') {
+                    loadAllFiles();
+                }
+            } catch (error) {
+                showAlert('Error al eliminar: ' + error.message, 'error');
+            }
+        }
+
+        // Form management
+        function openCreateFormModal() {
+            document.getElementById('createFormModal').classList.add('active');
+            document.getElementById('formFields').innerHTML = '';
+            fieldCounter = 0;
+        }
+
+        function closeCreateFormModal() {
+            document.getElementById('createFormModal').classList.remove('active');
+            document.getElementById('createFormForm').reset();
+        }
+
+        function addFormField() {
+            const container = document.getElementById('formFields');
+            const fieldId = fieldCounter++;
+            
+            const fieldHTML = `
+                <div class="form-field" id="field-${fieldId}">
+                    <div class="field-header">
+                        <strong>Campo ${fieldId + 1}</strong>
+                        <button type="button" class="btn-danger btn-small" onclick="removeField(${fieldId})">Eliminar</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Etiqueta del Campo</label>
+                        <input type="text" class="field-label" required placeholder="Ej: Nombre completo">
+                    </div>
+                    <div class="form-group">
+                        <label>Tipo de Campo</label>
+                        <select class="field-type">
+                            <option value="text">Texto</option>
+                            <option value="textarea">Área de Texto</option>
+                            <option value="number">Número</option>
+                            <option value="date">Fecha</option>
+                            <option value="email">Email</option>
+                            <option value="file">Archivo</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" class="field-required"> Campo Obligatorio
+                        </label>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', fieldHTML);
+        }
+
+        function removeField(fieldId) {
+            document.getElementById(`field-${fieldId}`).remove();
+        }
+
+        async function handleCreateForm(e) {
+            e.preventDefault();
+            
+            const title = document.getElementById('formTitle').value;
+            const description = document.getElementById('formDescription').value;
+            
+            const fields = [];
+            document.querySelectorAll('.form-field').forEach((fieldDiv, index) => {
+                fields.push({
+                    label: fieldDiv.querySelector('.field-label').value,
+                    type: fieldDiv.querySelector('.field-type').value,
+                    required: fieldDiv.querySelector('.field-required').checked
+                });
+            });
+
+            try {
+                const { error } = await supabase
+                    .from('forms')
+                    .insert([{
+                        title,
+                        description,
+                        fields,
+                        created_by: currentUser.id,
+                        user_email: currentUser.email
+                    }]);
+
+                if (error) throw error;
+
+                showAlert('Formulario creado exitosamente', 'success');
+                closeCreateFormModal();
+                loadForms();
+            } catch (error) {
+                showAlert('Error al crear formulario: ' + error.message, 'error');
+            }
+        }
+
+        async function loadForms() {
+            const container = document.getElementById('formsList');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando formularios...</div>';
+
+            try {
+                const { data, error } = await supabase
+                    .from('forms')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (data.length === 0) {
+                    container.innerHTML = '<div class="empty-state">📋<br>No hay formularios creados</div>';
+                    return;
+                }
+
+                container.innerHTML = data.map(form => `
+                    <div class="file-item">
+                        <div class="file-info">
+                            <div class="file-name">📋 ${form.title}</div>
+                            <div class="file-meta">
+                                ${form.description || 'Sin descripción'} • 
+                                ${form.fields.length} campos • 
+                                Creado: ${formatDate(form.created_at)}
+                            </div>
+                        </div>
+                        <button class="btn-danger btn-small" onclick="deleteForm('${form.id}')">Eliminar</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function deleteForm(formId) {
+            if (!confirm('¿Estás seguro de eliminar este formulario?')) return;
+
+            try {
+                const { error } = await supabase
+                    .from('forms')
+                    .delete()
+                    .eq('id', formId);
+
+                if (error) throw error;
+
+                showAlert('Formulario eliminado', 'success');
+                loadForms();
+            } catch (error) {
+                showAlert('Error al eliminar: ' + error.message, 'error');
+            }
+        }
+
+        // Utility functions
+        function showAlert(message, type) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            
+            const container = document.getElementById('alertContainer');
+            container.innerHTML = '';
+            container.appendChild(alertDiv);
+
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        function showError(elementId, message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-error';
+            errorDiv.textContent = message;
+            
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            container.appendChild(errorDiv);
+
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('es-ES', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Initialize on load
+        window.onload = init;
+    </script>
+</body>
+</html>
