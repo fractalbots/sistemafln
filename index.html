@@ -38,6 +38,17 @@
             margin: 0 auto;
         }
 
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo-container img {
+            max-width: 150px;
+            height: auto;
+            border-radius: 10px;
+        }
+
         h1 {
             color: #667eea;
             margin-bottom: 30px;
@@ -234,6 +245,12 @@
             border: 1px solid #bee5eb;
         }
 
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
         .form-field {
             background: #f8f9fa;
             padding: 15px;
@@ -330,12 +347,55 @@
             border-radius: 8px;
             margin-bottom: 20px;
         }
+
+        .resend-link {
+            color: #667eea;
+            cursor: pointer;
+            text-decoration: underline;
+            font-size: 14px;
+            display: block;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .resend-link:hover {
+            color: #5568d3;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            .file-item {
+                flex-direction: column;
+            }
+
+            .file-actions {
+                width: 100%;
+            }
+
+            .file-actions button {
+                flex: 1;
+            }
+
+            .tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Login Screen -->
         <div id="loginScreen" class="login-container">
+            <!-- Logo -->
+            <div class="logo-container">
+                <img src="logofln.jpeg" alt="Logo FLN" onerror="this.style.display='none'">
+            </div>
+            
             <h1>🔐 Sistema FLN</h1>
             <div class="connection-status">
                 ✅ Conectado a Supabase
@@ -352,6 +412,9 @@
                 </div>
                 <button type="submit" id="loginBtn">Iniciar Sesión</button>
             </form>
+            <span id="resendEmailLink" class="resend-link" style="display: none;" onclick="resendVerificationEmail()">
+                ¿No recibiste el email de verificación? Reenviar
+            </span>
         </div>
 
         <!-- Main App Screen -->
@@ -384,6 +447,9 @@
                     <div class="form-group">
                         <label for="fileInput">Seleccionar Archivo</label>
                         <input type="file" id="fileInput" required>
+                        <small style="color: #666; display: block; margin-top: 5px;">
+                            Máximo 10MB. Tipos permitidos: PDF, Word, Excel, Imágenes
+                        </small>
                     </div>
                     <div class="form-group">
                         <label for="fileDescription">Descripción</label>
@@ -470,6 +536,22 @@
         let supabaseClient;
         let currentUser = null;
         let fieldCounter = 0;
+        let pendingVerificationEmail = null;
+
+        // Validación de archivos
+        const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        const ALLOWED_TYPES = [
+            'application/pdf',
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/gif',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/plain'
+        ];
 
         // Emails de administradores
         const ADMIN_EMAILS = ['oyepez@fln.com'];
@@ -480,6 +562,9 @@
                 // Inicializar cliente de Supabase
                 supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
                 console.log('✅ Supabase inicializado correctamente');
+
+                // Verificar sesión existente
+                checkExistingSession();
             } catch (error) {
                 console.error('❌ Error al inicializar Supabase:', error);
                 showError('loginError', 'Error de conexión con Supabase');
@@ -491,7 +576,24 @@
             document.getElementById('createFormForm').addEventListener('submit', handleCreateForm);
         }
 
-        // Manejar login
+        // Verificar sesión existente
+        async function checkExistingSession() {
+            try {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session && session.user) {
+                    currentUser = {
+                        id: session.user.id,
+                        email: session.user.email,
+                        role: ADMIN_EMAILS.includes(session.user.email) ? 'admin' : 'user'
+                    };
+                    showApp();
+                }
+            } catch (error) {
+                console.error('Error verificando sesión:', error);
+            }
+        }
+
+        // Manejar login con retry para errores de red
         async function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -500,6 +602,7 @@
 
             loginBtn.disabled = true;
             loginBtn.textContent = 'Iniciando sesión...';
+            pendingVerificationEmail = email;
 
             try {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
@@ -507,7 +610,17 @@
                     password: password
                 });
 
-                if (error) throw error;
+                if (error) {
+                    // Manejo específico de error de email no confirmado
+                    if (error.message.includes('Email not confirmed') || 
+                        error.message.includes('email_not_confirmed')) {
+                        showError('loginError', 
+                            '⚠️ Tu email aún no ha sido verificado. Por favor revisa tu bandeja de entrada y confirma tu cuenta.');
+                        document.getElementById('resendEmailLink').style.display = 'block';
+                        return;
+                    }
+                    throw error;
+                }
 
                 currentUser = {
                     id: data.user.id,
@@ -518,10 +631,45 @@
                 showApp();
             } catch (error) {
                 console.error('Error de login:', error);
-                showError('loginError', error.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+                let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
+                
+                // Mensajes de error más específicos
+                if (error.message.includes('Invalid login credentials')) {
+                    errorMessage = '❌ Credenciales inválidas. Verifica tu email y contraseña.';
+                } else if (error.message.includes('Email not confirmed')) {
+                    errorMessage = '⚠️ Por favor verifica tu email antes de iniciar sesión.';
+                    document.getElementById('resendEmailLink').style.display = 'block';
+                } else if (error.message.includes('network') || error.message.includes('fetch')) {
+                    errorMessage = '🌐 Error de conexión. Por favor verifica tu internet.';
+                }
+                
+                showError('loginError', errorMessage);
             } finally {
                 loginBtn.disabled = false;
                 loginBtn.textContent = 'Iniciar Sesión';
+            }
+        }
+
+        // Reenviar email de verificación
+        async function resendVerificationEmail() {
+            if (!pendingVerificationEmail) {
+                showError('loginError', 'Por favor ingresa tu email primero.');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient.auth.resend({
+                    type: 'signup',
+                    email: pendingVerificationEmail
+                });
+
+                if (error) throw error;
+
+                showError('loginError', '✅ Email de verificación enviado. Por favor revisa tu bandeja de entrada.');
+                document.getElementById('resendEmailLink').style.display = 'none';
+            } catch (error) {
+                console.error('Error reenviando email:', error);
+                showError('loginError', '❌ Error al reenviar email: ' + error.message);
             }
         }
 
@@ -547,11 +695,17 @@
 
         // Cerrar sesión
         async function logout() {
-            await supabaseClient.auth.signOut();
-            currentUser = null;
-            document.getElementById('loginScreen').style.display = 'block';
-            document.getElementById('appScreen').style.display = 'none';
-            document.getElementById('loginForm').reset();
+            try {
+                await supabaseClient.auth.signOut();
+                currentUser = null;
+                document.getElementById('loginScreen').style.display = 'block';
+                document.getElementById('appScreen').style.display = 'none';
+                document.getElementById('loginForm').reset();
+                document.getElementById('resendEmailLink').style.display = 'none';
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                showAlert('Error al cerrar sesión', 'error');
+            }
         }
 
         // Cambiar de pestaña
@@ -567,7 +721,22 @@
             if (tabName === 'forms') loadForms();
         }
 
-        // Subir archivo
+        // Validar archivo antes de subir
+        function validateFile(file) {
+            // Validar tamaño
+            if (file.size > MAX_FILE_SIZE) {
+                return { valid: false, error: 'El archivo es muy grande. Máximo 10MB permitido.' };
+            }
+
+            // Validar tipo
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                return { valid: false, error: 'Tipo de archivo no permitido. Solo se permiten: PDF, Word, Excel e imágenes.' };
+            }
+
+            return { valid: true };
+        }
+
+        // Subir archivo con validación y retry
         async function handleFileUpload(e) {
             e.preventDefault();
             const fileInput = document.getElementById('fileInput');
@@ -582,6 +751,14 @@
             }
 
             const file = fileInput.files[0];
+            
+            // Validar archivo
+            const validation = validateFile(file);
+            if (!validation.valid) {
+                showAlert(validation.error, 'error');
+                return;
+            }
+
             uploadBtn.disabled = true;
             progressDiv.style.display = 'block';
 
@@ -623,7 +800,7 @@
 
                 progressFill.style.width = '100%';
 
-                showAlert('Archivo subido exitosamente', 'success');
+                showAlert('✅ Archivo subido exitosamente', 'success');
                 document.getElementById('uploadForm').reset();
                 loadMyFiles();
                 if (currentUser.role === 'admin') {
@@ -636,11 +813,24 @@
                 }, 1000);
 
             } catch (error) {
-                showAlert('Error al subir archivo: ' + error.message, 'error');
+                console.error('Error subiendo archivo:', error);
+                showAlert('❌ Error al subir archivo: ' + error.message, 'error');
                 progressDiv.style.display = 'none';
                 progressFill.style.width = '0%';
             } finally {
                 uploadBtn.disabled = false;
+            }
+        }
+
+        // Cargar archivos con retry
+        async function fetchWithRetry(fn, retries = 3) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    return await fn();
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+                }
             }
         }
 
@@ -650,11 +840,13 @@
             container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando archivos...</div>';
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('files')
-                    .select('*')
-                    .eq('uploaded_by', currentUser.id)
-                    .order('created_at', { ascending: false });
+                const { data, error } = await fetchWithRetry(() => 
+                    supabaseClient
+                        .from('files')
+                        .select('*')
+                        .eq('uploaded_by', currentUser.id)
+                        .order('created_at', { ascending: false })
+                );
 
                 if (error) throw error;
 
@@ -680,7 +872,8 @@
                     </div>
                 `).join('');
             } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
+                console.error('Error cargando archivos:', error);
+                container.innerHTML = `<div class="alert alert-error">❌ Error al cargar archivos: ${error.message}</div>`;
             }
         }
 
@@ -690,10 +883,12 @@
             container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando archivos...</div>';
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('files')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                const { data, error } = await fetchWithRetry(() =>
+                    supabaseClient
+                        .from('files')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                );
 
                 if (error) throw error;
 
@@ -720,7 +915,8 @@
                     </div>
                 `).join('');
             } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
+                console.error('Error cargando todos los archivos:', error);
+                container.innerHTML = `<div class="alert alert-error">❌ Error al cargar archivos: ${error.message}</div>`;
             }
         }
 
@@ -753,13 +949,14 @@
 
                 if (dbError) throw dbError;
 
-                showAlert('Archivo eliminado', 'success');
+                showAlert('✅ Archivo eliminado', 'success');
                 loadMyFiles();
                 if (currentUser.role === 'admin') {
                     loadAllFiles();
                 }
             } catch (error) {
-                showAlert('Error al eliminar: ' + error.message, 'error');
+                console.error('Error eliminando archivo:', error);
+                showAlert('❌ Error al eliminar: ' + error.message, 'error');
             }
         }
 
@@ -842,11 +1039,12 @@
 
                 if (error) throw error;
 
-                showAlert('Formulario creado exitosamente', 'success');
+                showAlert('✅ Formulario creado exitosamente', 'success');
                 closeCreateFormModal();
                 loadForms();
             } catch (error) {
-                showAlert('Error al crear formulario: ' + error.message, 'error');
+                console.error('Error creando formulario:', error);
+                showAlert('❌ Error al crear formulario: ' + error.message, 'error');
             }
         }
 
@@ -855,10 +1053,12 @@
             container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando formularios...</div>';
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('forms')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                const { data, error } = await fetchWithRetry(() =>
+                    supabaseClient
+                        .from('forms')
+                        .select('*')
+                        .order('created_at', { ascending: false })
+                );
 
                 if (error) throw error;
 
@@ -881,7 +1081,8 @@
                     </div>
                 `).join('');
             } catch (error) {
-                container.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
+                console.error('Error cargando formularios:', error);
+                container.innerHTML = `<div class="alert alert-error">❌ Error al cargar formularios: ${error.message}</div>`;
             }
         }
 
@@ -896,10 +1097,11 @@
 
                 if (error) throw error;
 
-                showAlert('Formulario eliminado', 'success');
+                showAlert('✅ Formulario eliminado', 'success');
                 loadForms();
             } catch (error) {
-                showAlert('Error al eliminar: ' + error.message, 'error');
+                console.error('Error eliminando formulario:', error);
+                showAlert('❌ Error al eliminar: ' + error.message, 'error');
             }
         }
 
@@ -924,8 +1126,6 @@
             const container = document.getElementById(elementId);
             container.innerHTML = '';
             container.appendChild(errorDiv);
-
-            setTimeout(() => errorDiv.remove(), 5000);
         }
 
         function formatFileSize(bytes) {
