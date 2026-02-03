@@ -62,6 +62,12 @@
             font-size: 22px;
         }
 
+        h3 {
+            color: #555;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
@@ -127,6 +133,10 @@
             background: #28a745;
         }
 
+        .btn-info {
+            background: #17a2b8;
+        }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -148,6 +158,10 @@
             border-radius: 20px;
             font-size: 12px;
             margin-left: 10px;
+        }
+
+        .user-badge.admin {
+            background: #dc3545;
         }
 
         .tabs {
@@ -219,6 +233,7 @@
         .file-actions {
             display: flex;
             gap: 5px;
+            flex-wrap: wrap;
         }
 
         .alert {
@@ -281,6 +296,7 @@
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            overflow-y: auto;
         }
 
         .modal.active {
@@ -295,6 +311,7 @@
             width: 90%;
             max-height: 80vh;
             overflow-y: auto;
+            margin: 20px;
         }
 
         .empty-state {
@@ -362,6 +379,132 @@
             color: #5568d3;
         }
 
+        .url-container {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 2px dashed #667eea;
+        }
+
+        .url-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .url-value {
+            font-family: monospace;
+            color: #667eea;
+            word-break: break-all;
+            font-size: 13px;
+            padding: 8px;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .copy-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 8px;
+            font-size: 14px;
+        }
+
+        .response-count {
+            display: inline-block;
+            padding: 3px 10px;
+            background: #28a745;
+            color: white;
+            border-radius: 12px;
+            font-size: 11px;
+            margin-left: 8px;
+        }
+
+        .response-item {
+            background: white;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .response-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .response-date {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .response-field {
+            margin-bottom: 8px;
+        }
+
+        .response-field strong {
+            color: #667eea;
+            font-size: 13px;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .response-field span {
+            color: #333;
+            font-size: 14px;
+        }
+
+        .public-form-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .success-message {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .success-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .users-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .users-info strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .users-info ul {
+            margin-left: 20px;
+            margin-top: 5px;
+        }
+
+        .users-info li {
+            margin-bottom: 3px;
+        }
+
         /* Responsive design */
         @media (max-width: 768px) {
             .container {
@@ -391,7 +534,6 @@
     <div class="container">
         <!-- Login Screen -->
         <div id="loginScreen" class="login-container">
-            <!-- Logo -->
             <div class="logo-container">
                 <img src="logofln.jpeg" alt="Logo FLN" onerror="this.style.display='none'">
             </div>
@@ -415,6 +557,28 @@
             <span id="resendEmailLink" class="resend-link" style="display: none;" onclick="resendVerificationEmail()">
                 ¿No recibiste el email de verificación? Reenviar
             </span>
+
+            <!-- Info de usuarios autorizados -->
+            <div class="users-info">
+                <strong>👥 Usuarios Autorizados:</strong>
+                <ul>
+                    <li><strong style="color: #dc3545; display: inline;">Admin:</strong> oyepez@fln.com</li>
+                    <li>jyepez@fln.com</li>
+                    <li>mlopez@fln.com</li>
+                    <li>vyepez@fln.com</li>
+                    <li>slopez@fln.com</li>
+                    <li>ucebot2016@gmail.com</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Public Form View (for users filling forms) -->
+        <div id="publicFormScreen" style="display: none;" class="public-form-container">
+            <div class="logo-container">
+                <img src="logofln.jpeg" alt="Logo FLN" onerror="this.style.display='none'">
+            </div>
+            
+            <div id="formContent"></div>
         </div>
 
         <!-- Main App Screen -->
@@ -523,6 +687,22 @@
         </div>
     </div>
 
+    <!-- View Form Modal (Admin) -->
+    <div id="viewFormModal" class="modal">
+        <div class="modal-content">
+            <div id="viewFormContent"></div>
+        </div>
+    </div>
+
+    <!-- View Responses Modal -->
+    <div id="viewResponsesModal" class="modal">
+        <div class="modal-content">
+            <h2>Respuestas del Formulario</h2>
+            <div id="responsesContent"></div>
+            <button class="btn-secondary" onclick="closeResponsesModal()">Cerrar</button>
+        </div>
+    </div>
+
     <script>
         // ============================================
         // CONFIGURACIÓN DE SUPABASE
@@ -553,18 +733,36 @@
             'text/plain'
         ];
 
-        // Emails de administradores
-        const ADMIN_EMAILS = ['oyepez@fln.com'];
+        // ============================================
+        // USUARIOS AUTORIZADOS DEL SISTEMA FLN
+        // ============================================
+        const AUTHORIZED_USERS = {
+            // Administrador
+            'oyepez@fln.com': 'admin',
+            
+            // Usuarios regulares
+            'jyepez@fln.com': 'user',
+            'mlopez@fln.com': 'user',
+            'vyepez@fln.com': 'user',
+            'slopez@fln.com': 'user',
+            'ucebot2016@gmail.com': 'user'
+        };
 
         // Inicializar aplicación
         function init() {
             try {
-                // Inicializar cliente de Supabase
                 supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.key);
                 console.log('✅ Supabase inicializado correctamente');
 
-                // Verificar sesión existente
-                checkExistingSession();
+                // Verificar si es una URL de formulario público
+                const urlParams = new URLSearchParams(window.location.search);
+                const formId = urlParams.get('form');
+                
+                if (formId) {
+                    loadPublicForm(formId);
+                } else {
+                    checkExistingSession();
+                }
             } catch (error) {
                 console.error('❌ Error al inicializar Supabase:', error);
                 showError('loginError', 'Error de conexión con Supabase');
@@ -576,15 +774,181 @@
             document.getElementById('createFormForm').addEventListener('submit', handleCreateForm);
         }
 
-        // Verificar sesión existente
+        // ============================================
+        // FUNCIONES DE FORMULARIOS PÚBLICOS
+        // ============================================
+        
+        async function loadPublicForm(formId) {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('publicFormScreen').style.display = 'block';
+            
+            const container = document.getElementById('formContent');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando formulario...</div>';
+
+            try {
+                const { data: form, error } = await supabaseClient
+                    .from('forms')
+                    .select('*')
+                    .eq('id', formId)
+                    .single();
+
+                if (error) throw error;
+
+                if (!form) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h2>❌ Formulario no encontrado</h2>
+                            <p>El formulario que buscas no existe o ha sido eliminado.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                renderPublicForm(form);
+            } catch (error) {
+                console.error('Error cargando formulario:', error);
+                container.innerHTML = `
+                    <div class="alert alert-error">
+                        ❌ Error al cargar el formulario: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        function renderPublicForm(form) {
+            const container = document.getElementById('formContent');
+            
+            let fieldsHtml = '';
+            form.fields.forEach((field, index) => {
+                const required = field.required ? 'required' : '';
+                const requiredLabel = field.required ? '<span style="color: red;">*</span>' : '';
+                
+                let inputHtml = '';
+                switch(field.type) {
+                    case 'textarea':
+                        inputHtml = `<textarea id="field_${index}" ${required} rows="4" placeholder="Ingresa ${field.label.toLowerCase()}"></textarea>`;
+                        break;
+                    case 'file':
+                        inputHtml = `<input type="file" id="field_${index}" ${required}>`;
+                        break;
+                    default:
+                        inputHtml = `<input type="${field.type}" id="field_${index}" ${required} placeholder="Ingresa ${field.label.toLowerCase()}">`;
+                }
+                
+                fieldsHtml += `
+                    <div class="form-group">
+                        <label for="field_${index}">${escapeHtml(field.label)} ${requiredLabel}</label>
+                        ${inputHtml}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="form-header">
+                    <h1>📋 ${escapeHtml(form.title)}</h1>
+                    <p>${escapeHtml(form.description || 'Complete el siguiente formulario')}</p>
+                </div>
+                
+                <form id="publicFormSubmit">
+                    ${fieldsHtml}
+                    <button type="submit" class="btn-success">Enviar Formulario</button>
+                </form>
+            `;
+
+            document.getElementById('publicFormSubmit').addEventListener('submit', (e) => {
+                e.preventDefault();
+                submitPublicForm(form);
+            });
+        }
+
+        async function submitPublicForm(form) {
+            const submitBtn = event.target.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Enviando...';
+
+            try {
+                const responses = {};
+                
+                for (let i = 0; i < form.fields.length; i++) {
+                    const field = form.fields[i];
+                    const input = document.getElementById(`field_${i}`);
+                    
+                    if (field.type === 'file') {
+                        if (input.files.length > 0) {
+                            const file = input.files[0];
+                            const fileExt = file.name.split('.').pop();
+                            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+                            const filePath = `form_responses/${form.id}/${fileName}`;
+
+                            const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                                .from('files')
+                                .upload(filePath, file);
+
+                            if (uploadError) throw uploadError;
+
+                            const { data: urlData } = supabaseClient.storage
+                                .from('files')
+                                .getPublicUrl(filePath);
+
+                            responses[field.label] = {
+                                type: 'file',
+                                name: file.name,
+                                url: urlData.publicUrl
+                            };
+                        }
+                    } else {
+                        responses[field.label] = input.value;
+                    }
+                }
+
+                const { error } = await supabaseClient
+                    .from('form_responses')
+                    .insert([{
+                        form_id: form.id,
+                        responses: responses
+                    }]);
+
+                if (error) throw error;
+
+                // Mostrar mensaje de éxito
+                document.getElementById('formContent').innerHTML = `
+                    <div class="success-message">
+                        <div class="success-icon">✅</div>
+                        <h2>¡Formulario Enviado!</h2>
+                        <p>Tu respuesta ha sido registrada exitosamente.</p>
+                        <p style="margin-top: 20px; color: #666;">Gracias por completar el formulario.</p>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error enviando formulario:', error);
+                alert('❌ Error al enviar el formulario: ' + error.message);
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Enviar Formulario';
+            }
+        }
+
+        // ============================================
+        // FUNCIONES DE AUTENTICACIÓN
+        // ============================================
+        
         async function checkExistingSession() {
             try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session && session.user) {
+                    const email = session.user.email;
+                    
+                    // Verificar si el usuario está autorizado
+                    if (!AUTHORIZED_USERS[email]) {
+                        await supabaseClient.auth.signOut();
+                        showError('loginError', '⛔ Tu cuenta no tiene acceso a este sistema. Contacta al administrador.');
+                        return;
+                    }
+
                     currentUser = {
                         id: session.user.id,
-                        email: session.user.email,
-                        role: ADMIN_EMAILS.includes(session.user.email) ? 'admin' : 'user'
+                        email: email,
+                        role: AUTHORIZED_USERS[email]
                     };
                     showApp();
                 }
@@ -593,10 +957,9 @@
             }
         }
 
-        // Manejar login con retry para errores de red
         async function handleLogin(e) {
             e.preventDefault();
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.toLowerCase().trim();
             const password = document.getElementById('password').value;
             const loginBtn = document.getElementById('loginBtn');
 
@@ -605,13 +968,17 @@
             pendingVerificationEmail = email;
 
             try {
+                // Verificar si el usuario está autorizado ANTES de intentar login
+                if (!AUTHORIZED_USERS[email]) {
+                    throw new Error('UNAUTHORIZED_USER');
+                }
+
                 const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email: email,
                     password: password
                 });
 
                 if (error) {
-                    // Manejo específico de error de email no confirmado
                     if (error.message.includes('Email not confirmed') || 
                         error.message.includes('email_not_confirmed')) {
                         showError('loginError', 
@@ -624,17 +991,20 @@
 
                 currentUser = {
                     id: data.user.id,
-                    email: data.user.email,
-                    role: ADMIN_EMAILS.includes(data.user.email) ? 'admin' : 'user'
+                    email: email,
+                    role: AUTHORIZED_USERS[email]
                 };
 
+                console.log(`✅ Usuario autenticado: ${email} (${currentUser.role})`);
                 showApp();
+
             } catch (error) {
                 console.error('Error de login:', error);
                 let errorMessage = 'Error al iniciar sesión. Verifica tus credenciales.';
                 
-                // Mensajes de error más específicos
-                if (error.message.includes('Invalid login credentials')) {
+                if (error.message === 'UNAUTHORIZED_USER') {
+                    errorMessage = '⛔ Tu cuenta no tiene acceso a este sistema. Contacta al administrador (oyepez@fln.com).';
+                } else if (error.message.includes('Invalid login credentials')) {
                     errorMessage = '❌ Credenciales inválidas. Verifica tu email y contraseña.';
                 } else if (error.message.includes('Email not confirmed')) {
                     errorMessage = '⚠️ Por favor verifica tu email antes de iniciar sesión.';
@@ -650,7 +1020,6 @@
             }
         }
 
-        // Reenviar email de verificación
         async function resendVerificationEmail() {
             if (!pendingVerificationEmail) {
                 showError('loginError', 'Por favor ingresa tu email primero.');
@@ -673,14 +1042,16 @@
             }
         }
 
-        // Mostrar aplicación
         function showApp() {
             document.getElementById('loginScreen').style.display = 'none';
             document.getElementById('appScreen').style.display = 'block';
             document.getElementById('userEmail').textContent = currentUser.email;
-            document.getElementById('userRole').textContent = currentUser.role === 'admin' ? 'Administrador' : 'Usuario';
+            
+            const roleText = currentUser.role === 'admin' ? 'Administrador' : 'Usuario';
+            const roleClass = currentUser.role === 'admin' ? 'user-badge admin' : 'user-badge';
+            document.getElementById('userRole').textContent = roleText;
+            document.getElementById('userRole').className = roleClass;
 
-            // Mostrar pestañas de admin
             if (currentUser.role === 'admin') {
                 document.getElementById('allFilesTabBtn').style.display = 'block';
                 document.getElementById('formsTabBtn').style.display = 'block';
@@ -693,22 +1064,21 @@
             }
         }
 
-        // Cerrar sesión
         async function logout() {
             try {
                 await supabaseClient.auth.signOut();
                 currentUser = null;
-                document.getElementById('loginScreen').style.display = 'block';
-                document.getElementById('appScreen').style.display = 'none';
-                document.getElementById('loginForm').reset();
-                document.getElementById('resendEmailLink').style.display = 'none';
+                window.location.reload();
             } catch (error) {
                 console.error('Error al cerrar sesión:', error);
                 showAlert('Error al cerrar sesión', 'error');
             }
         }
 
-        // Cambiar de pestaña
+        // ============================================
+        // FUNCIONES DE GESTIÓN DE ARCHIVOS
+        // ============================================
+        
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -721,14 +1091,11 @@
             if (tabName === 'forms') loadForms();
         }
 
-        // Validar archivo antes de subir
         function validateFile(file) {
-            // Validar tamaño
             if (file.size > MAX_FILE_SIZE) {
                 return { valid: false, error: 'El archivo es muy grande. Máximo 10MB permitido.' };
             }
 
-            // Validar tipo
             if (!ALLOWED_TYPES.includes(file.type)) {
                 return { valid: false, error: 'Tipo de archivo no permitido. Solo se permiten: PDF, Word, Excel e imágenes.' };
             }
@@ -736,7 +1103,6 @@
             return { valid: true };
         }
 
-        // Subir archivo con validación y retry
         async function handleFileUpload(e) {
             e.preventDefault();
             const fileInput = document.getElementById('fileInput');
@@ -752,7 +1118,6 @@
 
             const file = fileInput.files[0];
             
-            // Validar archivo
             const validation = validateFile(file);
             if (!validation.valid) {
                 showAlert(validation.error, 'error');
@@ -822,7 +1187,6 @@
             }
         }
 
-        // Cargar archivos con retry
         async function fetchWithRetry(fn, retries = 3) {
             for (let i = 0; i < retries; i++) {
                 try {
@@ -834,7 +1198,6 @@
             }
         }
 
-        // Cargar mis archivos
         async function loadMyFiles() {
             const container = document.getElementById('myFilesList');
             container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando archivos...</div>';
@@ -877,7 +1240,6 @@
             }
         }
 
-        // Cargar todos los archivos (admin)
         async function loadAllFiles() {
             const container = document.getElementById('allFilesList');
             container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando archivos...</div>';
@@ -920,7 +1282,6 @@
             }
         }
 
-        // Descargar archivo
         function downloadFile(url, filename) {
             const link = document.createElement('a');
             link.href = url;
@@ -931,7 +1292,6 @@
             document.body.removeChild(link);
         }
 
-        // Eliminar archivo
         async function deleteFile(fileId, filePath) {
             if (!confirm('¿Estás seguro de eliminar este archivo?')) return;
 
@@ -960,7 +1320,10 @@
             }
         }
 
-        // Gestión de formularios
+        // ============================================
+        // FUNCIONES DE GESTIÓN DE FORMULARIOS (ADMIN)
+        // ============================================
+        
         function openCreateFormModal() {
             document.getElementById('createFormModal').classList.add('active');
             document.getElementById('formFields').innerHTML = '';
@@ -1026,8 +1389,13 @@
                 });
             });
 
+            if (fields.length === 0) {
+                showAlert('⚠️ Debes agregar al menos un campo al formulario', 'warning');
+                return;
+            }
+
             try {
-                const { error } = await supabaseClient
+                const { data, error } = await supabaseClient
                     .from('forms')
                     .insert([{
                         title,
@@ -1035,7 +1403,8 @@
                         fields,
                         created_by: currentUser.id,
                         user_email: currentUser.email
-                    }]);
+                    }])
+                    .select();
 
                 if (error) throw error;
 
@@ -1053,7 +1422,7 @@
             container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando formularios...</div>';
 
             try {
-                const { data, error } = await fetchWithRetry(() =>
+                const { data: forms, error } = await fetchWithRetry(() =>
                     supabaseClient
                         .from('forms')
                         .select('*')
@@ -1062,22 +1431,39 @@
 
                 if (error) throw error;
 
-                if (data.length === 0) {
+                if (forms.length === 0) {
                     container.innerHTML = '<div class="empty-state">📋<br>No hay formularios creados</div>';
                     return;
                 }
 
-                container.innerHTML = data.map(form => `
+                // Obtener conteo de respuestas para cada formulario
+                const formsWithResponses = await Promise.all(forms.map(async (form) => {
+                    const { count } = await supabaseClient
+                        .from('form_responses')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('form_id', form.id);
+                    
+                    return { ...form, responseCount: count || 0 };
+                }));
+
+                container.innerHTML = formsWithResponses.map(form => `
                     <div class="file-item">
                         <div class="file-info">
-                            <div class="file-name">📋 ${escapeHtml(form.title)}</div>
+                            <div class="file-name">
+                                📋 ${escapeHtml(form.title)}
+                                <span class="response-count">${form.responseCount} respuesta${form.responseCount !== 1 ? 's' : ''}</span>
+                            </div>
                             <div class="file-meta">
                                 ${escapeHtml(form.description || 'Sin descripción')} • 
                                 ${form.fields.length} campos • 
                                 Creado: ${formatDate(form.created_at)}
                             </div>
                         </div>
-                        <button class="btn-danger btn-small" onclick="deleteForm('${form.id}')">Eliminar</button>
+                        <div class="file-actions">
+                            <button class="btn-info btn-small" onclick="viewFormDetails('${form.id}')">Ver Detalles</button>
+                            <button class="btn-secondary btn-small" onclick="viewResponses('${form.id}')">Ver Respuestas</button>
+                            <button class="btn-danger btn-small" onclick="deleteForm('${form.id}')">Eliminar</button>
+                        </div>
                     </div>
                 `).join('');
             } catch (error) {
@@ -1086,16 +1472,162 @@
             }
         }
 
-        async function deleteForm(formId) {
-            if (!confirm('¿Estás seguro de eliminar este formulario?')) return;
+        async function viewFormDetails(formId) {
+            try {
+                const { data: form, error } = await supabaseClient
+                    .from('forms')
+                    .select('*')
+                    .eq('id', formId)
+                    .single();
+
+                if (error) throw error;
+
+                const publicUrl = `${window.location.origin}${window.location.pathname}?form=${formId}`;
+
+                const fieldsHtml = form.fields.map((field, index) => `
+                    <div style="background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 8px;">
+                        <strong>Campo ${index + 1}:</strong> ${escapeHtml(field.label)}<br>
+                        <small style="color: #666;">
+                            Tipo: ${field.type} • 
+                            ${field.required ? 'Obligatorio' : 'Opcional'}
+                        </small>
+                    </div>
+                `).join('');
+
+                document.getElementById('viewFormContent').innerHTML = `
+                    <h2>📋 ${escapeHtml(form.title)}</h2>
+                    <p style="color: #666; margin-bottom: 20px;">${escapeHtml(form.description || 'Sin descripción')}</p>
+                    
+                    <h3>Campos del Formulario</h3>
+                    ${fieldsHtml}
+                    
+                    <h3 style="margin-top: 25px;">URL Pública del Formulario</h3>
+                    <div class="url-container">
+                        <div class="url-label">Comparte este enlace para que otros puedan llenar el formulario:</div>
+                        <div class="url-value" id="formUrl" onclick="selectUrl()">${publicUrl}</div>
+                        <button class="btn-info copy-btn" onclick="copyFormUrl('${publicUrl}')">📋 Copiar Enlace</button>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <button class="btn-secondary" onclick="closeViewFormModal()">Cerrar</button>
+                    </div>
+                `;
+
+                document.getElementById('viewFormModal').classList.add('active');
+            } catch (error) {
+                console.error('Error cargando detalles del formulario:', error);
+                showAlert('❌ Error al cargar detalles: ' + error.message, 'error');
+            }
+        }
+
+        function closeViewFormModal() {
+            document.getElementById('viewFormModal').classList.remove('active');
+        }
+
+        function selectUrl() {
+            const urlElement = document.getElementById('formUrl');
+            const range = document.createRange();
+            range.selectNodeContents(urlElement);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        async function copyFormUrl(url) {
+            try {
+                await navigator.clipboard.writeText(url);
+                showAlert('✅ Enlace copiado al portapapeles', 'success');
+            } catch (error) {
+                const textArea = document.createElement('textarea');
+                textArea.value = url;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showAlert('✅ Enlace copiado al portapapeles', 'success');
+                } catch (err) {
+                    showAlert('⚠️ No se pudo copiar automáticamente. Por favor copia manualmente.', 'warning');
+                }
+                document.body.removeChild(textArea);
+            }
+        }
+
+        async function viewResponses(formId) {
+            const container = document.getElementById('responsesContent');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Cargando respuestas...</div>';
+            document.getElementById('viewResponsesModal').classList.add('active');
 
             try {
-                const { error } = await supabaseClient
+                const { data: responses, error } = await supabaseClient
+                    .from('form_responses')
+                    .select('*')
+                    .eq('form_id', formId)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (responses.length === 0) {
+                    container.innerHTML = '<div class="empty-state">📭<br>No hay respuestas aún</div>';
+                    return;
+                }
+
+                container.innerHTML = responses.map((response, index) => {
+                    const responsesHtml = Object.entries(response.responses).map(([key, value]) => {
+                        let valueDisplay = '';
+                        if (typeof value === 'object' && value.type === 'file') {
+                            valueDisplay = `<a href="${value.url}" target="_blank" style="color: #667eea;">📎 ${value.name}</a>`;
+                        } else {
+                            valueDisplay = escapeHtml(String(value));
+                        }
+                        
+                        return `
+                            <div class="response-field">
+                                <strong>${escapeHtml(key)}:</strong>
+                                <span>${valueDisplay}</span>
+                            </div>
+                        `;
+                    }).join('');
+
+                    return `
+                        <div class="response-item">
+                            <div class="response-header">
+                                <strong>Respuesta #${responses.length - index}</strong>
+                                <span class="response-date">${formatDate(response.created_at)}</span>
+                            </div>
+                            ${responsesHtml}
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('Error cargando respuestas:', error);
+                container.innerHTML = `<div class="alert alert-error">❌ Error al cargar respuestas: ${error.message}</div>`;
+            }
+        }
+
+        function closeResponsesModal() {
+            document.getElementById('viewResponsesModal').classList.remove('active');
+        }
+
+        async function deleteForm(formId) {
+            if (!confirm('¿Estás seguro de eliminar este formulario? También se eliminarán todas las respuestas.')) return;
+
+            try {
+                const { error: responsesError } = await supabaseClient
+                    .from('form_responses')
+                    .delete()
+                    .eq('form_id', formId);
+
+                if (responsesError) throw responsesError;
+
+                const { error: formError } = await supabaseClient
                     .from('forms')
                     .delete()
                     .eq('id', formId);
 
-                if (error) throw error;
+                if (formError) throw formError;
 
                 showAlert('✅ Formulario eliminado', 'success');
                 loadForms();
@@ -1105,7 +1637,10 @@
             }
         }
 
-        // Funciones de utilidad
+        // ============================================
+        // FUNCIONES DE UTILIDAD
+        // ============================================
+        
         function showAlert(message, type) {
             const alertDiv = document.createElement('div');
             alertDiv.className = `alert alert-${type}`;
