@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Gestión FLN</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -135,6 +136,10 @@
 
         .btn-info {
             background: #17a2b8;
+        }
+
+        .btn-excel {
+            background: #217346;
         }
 
         .header {
@@ -505,6 +510,13 @@
             margin-bottom: 3px;
         }
 
+        .tab-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
         /* Responsive design */
         @media (max-width: 768px) {
             .container {
@@ -641,7 +653,10 @@
 
             <!-- All Files Tab (Admin only) -->
             <div id="allFilesTab" class="tab-content">
-                <h2>Todos los Archivos</h2>
+                <div class="tab-header">
+                    <h2>Todos los Archivos</h2>
+                    <button class="btn-excel btn-small" onclick="exportFilesToExcel()">📊 Exportar a Excel</button>
+                </div>
                 <div id="allFilesList" class="file-list">
                     <div class="loading">
                         <div class="spinner"></div>
@@ -697,7 +712,10 @@
     <!-- View Responses Modal -->
     <div id="viewResponsesModal" class="modal">
         <div class="modal-content">
-            <h2>Respuestas del Formulario</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0;">Respuestas del Formulario</h2>
+                <button class="btn-excel btn-small" onclick="exportResponsesToExcel()">📊 Exportar a Excel</button>
+            </div>
             <div id="responsesContent"></div>
             <button class="btn-secondary" onclick="closeResponsesModal()">Cerrar</button>
         </div>
@@ -717,6 +735,7 @@
         let currentUser = null;
         let fieldCounter = 0;
         let pendingVerificationEmail = null;
+        let currentFormResponses = null; // Para guardar las respuestas actuales
 
         // Validación de archivos
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -772,6 +791,125 @@
             document.getElementById('loginForm').addEventListener('submit', handleLogin);
             document.getElementById('uploadForm').addEventListener('submit', handleFileUpload);
             document.getElementById('createFormForm').addEventListener('submit', handleCreateForm);
+        }
+
+        // ============================================
+        // FUNCIONES DE EXPORTACIÓN A EXCEL
+        // ============================================
+
+        async function exportFilesToExcel() {
+            try {
+                const { data: files, error } = await supabaseClient
+                    .from('files')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if (files.length === 0) {
+                    showAlert('⚠️ No hay archivos para exportar', 'warning');
+                    return;
+                }
+
+                // Preparar datos para Excel
+                const excelData = files.map(file => ({
+                    'Nombre': file.name,
+                    'Descripción': file.description || 'Sin descripción',
+                    'Usuario': file.user_email,
+                    'Tamaño': formatFileSize(file.file_size),
+                    'Tipo': file.file_type,
+                    'Fecha de Subida': formatDate(file.created_at),
+                    'URL': file.file_url
+                }));
+
+                // Crear libro de Excel
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(excelData);
+
+                // Ajustar ancho de columnas
+                ws['!cols'] = [
+                    { wch: 30 }, // Nombre
+                    { wch: 40 }, // Descripción
+                    { wch: 25 }, // Usuario
+                    { wch: 12 }, // Tamaño
+                    { wch: 20 }, // Tipo
+                    { wch: 20 }, // Fecha
+                    { wch: 50 }  // URL
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, 'Archivos');
+
+                // Descargar archivo
+                const fecha = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(wb, `FLN_Archivos_${fecha}.xlsx`);
+
+                showAlert('✅ Archivo Excel exportado exitosamente', 'success');
+            } catch (error) {
+                console.error('Error exportando a Excel:', error);
+                showAlert('❌ Error al exportar: ' + error.message, 'error');
+            }
+        }
+
+        async function exportResponsesToExcel() {
+            try {
+                if (!currentFormResponses || currentFormResponses.length === 0) {
+                    showAlert('⚠️ No hay respuestas para exportar', 'warning');
+                    return;
+                }
+
+                // Obtener información del formulario
+                const formId = currentFormResponses[0].form_id;
+                const { data: form } = await supabaseClient
+                    .from('forms')
+                    .select('title')
+                    .eq('id', formId)
+                    .single();
+
+                // Preparar datos para Excel
+                const excelData = currentFormResponses.map((response, index) => {
+                    const row = {
+                        'N°': currentFormResponses.length - index,
+                        'Fecha': formatDate(response.created_at)
+                    };
+
+                    // Agregar cada campo de respuesta
+                    Object.entries(response.responses).forEach(([key, value]) => {
+                        if (typeof value === 'object' && value.type === 'file') {
+                            row[key] = `${value.name} (${value.url})`;
+                        } else {
+                            row[key] = value;
+                        }
+                    });
+
+                    return row;
+                });
+
+                // Crear libro de Excel
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(excelData);
+
+                // Ajustar ancho de columnas automáticamente
+                const colWidths = Object.keys(excelData[0] || {}).map(key => ({
+                    wch: Math.max(key.length, 15)
+                }));
+                ws['!cols'] = colWidths;
+
+                const sheetName = form?.title ? form.title.substring(0, 30) : 'Respuestas';
+                XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+                // Descargar archivo
+                const fecha = new Date().toISOString().split('T')[0];
+                const fileName = form?.title 
+                    ? `FLN_${form.title.replace(/[^a-z0-9]/gi, '_')}_${fecha}.xlsx`
+                    : `FLN_Formulario_${fecha}.xlsx`;
+                    
+                XLSX.writeFile(wb, fileName);
+
+                showAlert('✅ Respuestas exportadas a Excel exitosamente', 'success');
+            } catch (error) {
+                console.error('Error exportando respuestas:', error);
+                showAlert('❌ Error al exportar: ' + error.message, 'error');
+            }
         }
 
         // ============================================
@@ -1568,6 +1706,9 @@
 
                 if (error) throw error;
 
+                // Guardar las respuestas para la exportación
+                currentFormResponses = responses;
+
                 if (responses.length === 0) {
                     container.innerHTML = '<div class="empty-state">📭<br>No hay respuestas aún</div>';
                     return;
@@ -1609,6 +1750,7 @@
 
         function closeResponsesModal() {
             document.getElementById('viewResponsesModal').classList.remove('active');
+            currentFormResponses = null;
         }
 
         async function deleteForm(formId) {
