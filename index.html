@@ -867,15 +867,17 @@
         let currentUser = null;
         let fieldCounter = 0;
         let pendingVerificationEmail = null;
-        let currentFormResponses = null; // Para guardar las respuestas actuales
-        let currentPaymentLink = null; // Para guardar el link de pago actual
+        let currentFormResponses = null;
+        let currentPaymentLink = null;
 
-        // Configuración de Payphone - Credenciales hardcodeadas
+        // ============================================
+        // CONFIGURACIÓN DE PAYPHONE - PRODUCCIÓN
+        // ============================================
         const PAYPHONE_CONFIG = {
-            baseUrl: 'https://sandbox-payflow.payphonetodoapps.com/api',
-            customer_id: '1725380008001',
-            identifier: '0990163527',
-            encoding_password: 'MDu4DTR8wEGmuYzZcE2wFQ'
+            baseUrl: 'https://pay.payphonetodoapps.com/api',
+            customer_id: 'YTxB87FHTEWEPgVqXPafhQ',
+            identifier: 'WLnfg1EuUUipx7PLbHfQrw',
+            encoding_password: '16c6e25af638466ebc0e72cdce0db040'
         };
 
         async function getPayphoneToken() {
