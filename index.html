@@ -142,6 +142,88 @@
             background: #217346;
         }
 
+        .btn-payphone {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+        }
+
+        .btn-payphone:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.4);
+        }
+
+        .payment-card {
+            background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+            border-radius: 15px;
+            padding: 30px;
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .payment-card h3 {
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .payment-form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .payment-result {
+            text-align: center;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .payment-link-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            word-break: break-all;
+            border: 2px dashed #ff6b35;
+        }
+
+        .payment-history {
+            margin-top: 30px;
+        }
+
+        .payment-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .payment-status {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .payment-status.pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .payment-status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .payment-status.failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -614,6 +696,7 @@
                 <button class="tab" onclick="switchTab('files')">📁 Mis Archivos</button>
                 <button class="tab" id="allFilesTabBtn" style="display: none;" onclick="switchTab('allFiles')">👥 Todos los Archivos</button>
                 <button class="tab" id="formsTabBtn" style="display: none;" onclick="switchTab('forms')">📋 Formularios</button>
+                <button class="tab" id="paymentsTabBtn" style="display: none;" onclick="switchTab('payments')">💳 Pagos</button>
             </div>
 
             <!-- Upload Tab -->
@@ -673,6 +756,55 @@
                     <div class="loading">
                         <div class="spinner"></div>
                         Cargando formularios...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payments Tab (Admin only) -->
+            <div id="paymentsTab" class="tab-content">
+                <h2>💳 Gestión de Pagos</h2>
+                
+                <div class="payment-card">
+                    <h3>Generar Link de Pago - Payphone</h3>
+                    <p>Crea links de pago para que tus clientes paguen con tarjeta de crédito/débito</p>
+                    <p style="font-size: 12px; margin-top: 5px;">El dinero se deposita automáticamente en tu cuenta Banco Pichincha</p>
+                </div>
+
+                <div class="payment-form">
+                    <form id="paymentForm">
+                        <div class="form-group">
+                            <label for="paymentAmount">Monto a cobrar (USD)</label>
+                            <input type="number" id="paymentAmount" step="0.01" min="0.50" required placeholder="Ej: 25.00">
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentDescription">Concepto de pago</label>
+                            <input type="text" id="paymentDescription" required placeholder="Ej: Servicio de consultoría">
+                        </div>
+                        <div class="form-group">
+                            <label for="paymentClientEmail">Email del cliente (opcional)</label>
+                            <input type="email" id="paymentClientEmail" placeholder="cliente@email.com">
+                        </div>
+                        <button type="submit" class="btn-payphone" id="generatePaymentBtn">💳 Generar Link de Pago</button>
+                    </form>
+
+                    <div id="paymentResult" style="display: none;">
+                        <div class="payment-result">
+                            <h3>✅ Link de Pago Generado</h3>
+                            <p>Comparte este link con tu cliente:</p>
+                            <div class="payment-link-box" id="paymentLinkBox"></div>
+                            <button class="btn-info" onclick="copyPaymentLink()">📋 Copiar Link</button>
+                            <button class="btn-payphone" onclick="openPaymentLink()" style="margin-top: 10px;">🔗 Abrir Link de Pago</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="payment-history">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3>Historial de Pagos</h3>
+                        <button class="btn-excel btn-small" onclick="exportPaymentsToExcel()">📊 Exportar a Excel</button>
+                    </div>
+                    <div id="paymentsList">
+                        <div class="empty-state">💳<br>No hay pagos generados aún</div>
                     </div>
                 </div>
             </div>
@@ -736,6 +868,82 @@
         let fieldCounter = 0;
         let pendingVerificationEmail = null;
         let currentFormResponses = null; // Para guardar las respuestas actuales
+        let currentPaymentLink = null; // Para guardar el link de pago actual
+
+        // Configuración de Payphone - Credenciales hardcodeadas
+        const PAYPHONE_CONFIG = {
+            baseUrl: 'https://sandbox-payflow.payphonetodoapps.com/api',
+            customer_id: '1725380008001',
+            identifier: '0990163527',
+            encoding_password: 'MDu4DTR8wEGmuYzZcE2wFQ'
+        };
+
+        async function getPayphoneToken() {
+            const response = await fetch(`${PAYPHONE_CONFIG.baseUrl}/Auth/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: PAYPHONE_CONFIG.customer_id,
+                    password: PAYPHONE_CONFIG.encoding_password
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error de autenticación: ${response.status}`);
+            }
+
+            const data = await response.json();
+            return data.access_token;
+        }
+
+        async function generatePayphoneLink(amount, description, clientEmail) {
+            const token = await getPayphoneToken();
+
+            const payload = {
+                amount: parseFloat((amount * 100).toFixed(0)),
+                currency: 'USD',
+                customerId: clientEmail || 'cliente@fln.com',
+                customerName: clientEmail ? clientEmail.split('@')[0] : 'Cliente FLN',
+                customerEmail: clientEmail || 'cliente@fln.com',
+                customerPhone: '0990163527',
+                identifier: PAYPHONE_CONFIG.identifier,
+                description: description,
+                responseUrl: window.location.href,
+                expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                taxAmount: 0,
+                taxPercentage: 0,
+                installments: false,
+                sendSms: false,
+                sendEmail: false,
+                confirmationUrl: window.location.href,
+                language: 'es',
+                paymentMethods: []
+            };
+
+            try {
+                const response = await fetch(`${PAYPHONE_CONFIG.baseUrl}/PreCheckout`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                return data.url || data.link || data.data?.url || null;
+            } catch (error) {
+                console.error('Error generando link de pago:', error);
+                throw error;
+            }
+        }
 
         // Validación de archivos
         const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -1067,11 +1275,176 @@
         }
 
         // ============================================
-        // FUNCIONES DE AUTENTICACIÓN
+        // FUNCIONES DE GESTIÓN DE PAGOS (PAYPHONE)
         // ============================================
         
-        async function checkExistingSession() {
+        async function generatePayment() {
+            const amount = parseFloat(document.getElementById('paymentAmount').value);
+            const description = document.getElementById('paymentDescription').value.trim();
+            const clientEmail = document.getElementById('paymentClientEmail').value.trim();
+            const btn = document.getElementById('generatePaymentBtn');
+
+            if (amount < 0.50) {
+                showAlert('⚠️ El monto mínimo es $0.50', 'warning');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Generando link...';
+
             try {
+                const paymentLink = await generatePayphoneLink(amount, description, clientEmail);
+                
+                if (!paymentLink) {
+                    throw new Error('No se pudo generar el link de pago');
+                }
+
+                currentPaymentLink = paymentLink;
+                document.getElementById('paymentResult').style.display = 'block';
+                document.getElementById('paymentLinkBox').textContent = paymentLink;
+                
+                savePaymentToHistory({
+                    amount: amount,
+                    description: description,
+                    clientEmail: clientEmail,
+                    link: paymentLink,
+                    createdAt: new Date().toISOString()
+                });
+
+                showAlert('✅ Link de pago generado exitosamente', 'success');
+                loadPaymentsHistory();
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showAlert('❌ Error al generar link de pago: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '💳 Generar Link de Pago';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const paymentForm = document.getElementById('paymentForm');
+            if (paymentForm) {
+                paymentForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    generatePayment();
+                });
+            }
+        });
+
+        function copyPaymentLink() {
+            if (!currentPaymentLink) return;
+            navigator.clipboard.writeText(currentPaymentLink).then(() => {
+                showAlert('✅ Link copiado al portapapeles', 'success');
+            }).catch(() => {
+                const textArea = document.createElement('textarea');
+                textArea.value = currentPaymentLink;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-999999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showAlert('✅ Link copiado al portapapeles', 'success');
+            });
+        }
+
+        function openPaymentLink() {
+            if (currentPaymentLink) {
+                window.open(currentPaymentLink, '_blank');
+            }
+        }
+
+        function savePaymentToHistory(payment) {
+            try {
+                let history = JSON.parse(localStorage.getItem('paymentsHistory') || '[]');
+                history.unshift(payment);
+                localStorage.setItem('paymentsHistory', JSON.stringify(history));
+            } catch (error) {
+                console.error('Error guardando historial:', error);
+            }
+        }
+
+        function loadPaymentsHistory() {
+            const container = document.getElementById('paymentsList');
+            if (!container) return;
+            try {
+                const history = JSON.parse(localStorage.getItem('paymentsHistory') || '[]');
+                if (history.length === 0) {
+                    container.innerHTML = '<div class="empty-state">💳<br>No hay pagos generados aún</div>';
+                    return;
+                }
+                container.innerHTML = history.map((payment, index) => `
+                    <div class="payment-item">
+                        <div class="file-info">
+                            <div class="file-name">💵 $${payment.amount.toFixed(2)} - ${escapeHtml(payment.description)}</div>
+                            <div class="file-meta">
+                                ${payment.clientEmail ? 'Cliente: ' + escapeHtml(payment.clientEmail) + ' • ' : ''}
+                                ${formatDate(payment.createdAt)}
+                            </div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="btn-secondary btn-small" onclick="copyPaymentLinkFromHistory(${index})">📋 Copiar Link</button>
+                            <button class="btn-payphone btn-small" onclick="openPaymentLinkFromHistory(${index})">🔗 Abrir</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                container.innerHTML = '<div class="empty-state">💳<br>No hay pagos generados aún</div>';
+            }
+        }
+
+        function copyPaymentLinkFromHistory(index) {
+            const history = JSON.parse(localStorage.getItem('paymentsHistory') || '[]');
+            if (history[index]) {
+                navigator.clipboard.writeText(history[index].link).then(() => {
+                    showAlert('✅ Link copiado', 'success');
+                });
+            }
+        }
+
+        function openPaymentLinkFromHistory(index) {
+            const history = JSON.parse(localStorage.getItem('paymentsHistory') || '[]');
+            if (history[index]) {
+                window.open(history[index].link, '_blank');
+            }
+        }
+
+        async function exportPaymentsToExcel() {
+            try {
+                const history = JSON.parse(localStorage.getItem('paymentsHistory') || '[]');
+                if (history.length === 0) {
+                    showAlert('⚠️ No hay pagos para exportar', 'warning');
+                    return;
+                }
+                const excelData = history.map((payment, index) => ({
+                    'N°': history.length - index,
+                    'Monto (USD)': payment.amount.toFixed(2),
+                    'Concepto': payment.description,
+                    'Email Cliente': payment.clientEmail || 'No especificado',
+                    'Fecha': formatDate(payment.createdAt),
+                    'Link de Pago': payment.link
+                }));
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.json_to_sheet(excelData);
+                ws['!cols'] = [
+                    { wch: 5 }, { wch: 12 }, { wch: 35 }, { wch: 30 }, { wch: 20 }, { wch: 60 }
+                ];
+                XLSX.utils.book_append_sheet(wb, ws, 'Pagos');
+                const fecha = new Date().toISOString().split('T')[0];
+                XLSX.writeFile(wb, `FLN_Pagos_${fecha}.xlsx`);
+                showAlert('✅ Pagos exportados a Excel', 'success');
+            } catch (error) {
+                console.error('Error exportando pagos:', error);
+                showAlert('❌ Error al exportar: ' + error.message, 'error');
+            }
+        }
+
+        // ============================================
+        // FUNCIONES DE AUTENTICACIÓN
+        
+        async function checkExistingSession() {            try {
                 const { data: { session } } = await supabaseClient.auth.getSession();
                 if (session && session.user) {
                     const email = session.user.email;
@@ -1193,12 +1566,14 @@
             if (currentUser.role === 'admin') {
                 document.getElementById('allFilesTabBtn').style.display = 'block';
                 document.getElementById('formsTabBtn').style.display = 'block';
+                document.getElementById('paymentsTabBtn').style.display = 'block';
             }
 
             loadMyFiles();
             if (currentUser.role === 'admin') {
                 loadAllFiles();
                 loadForms();
+                loadPaymentsHistory();
             }
         }
 
@@ -1227,6 +1602,7 @@
             if (tabName === 'files') loadMyFiles();
             if (tabName === 'allFiles') loadAllFiles();
             if (tabName === 'forms') loadForms();
+            if (tabName === 'payments') loadPaymentsHistory();
         }
 
         function validateFile(file) {
